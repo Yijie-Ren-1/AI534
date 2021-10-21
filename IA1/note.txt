@@ -1,0 +1,7 @@
+original: 4.4922
+dummies zipcode: 2.8423
+dummies zipcode + has: 2.84458
+0 to 1: 2.83439
+0 to train_price_min: 2.835784
+dummies zipcode + has + dummies index: 2.3830
+dummies zipcode + total square feet + dummies index: 2.36506
