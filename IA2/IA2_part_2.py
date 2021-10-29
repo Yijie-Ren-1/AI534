@@ -3,6 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 
 def data_preprocessing(csv_file_path):
@@ -70,7 +71,7 @@ def z_score(df, mean, std):
 def sigmoid(z): 
   return 1 / (1 + np.exp(-z))
     
-def LR_l2(X, Y, iter_num, lamda, alpha):  
+def LR_l1(X, Y, iter_num, lamda, alpha):  
     
   # print(predict_0)
   # print(-np.sum(predict_1 + predict_0) / X.shape[0] + lamda * np.sum((w**2)))
@@ -87,8 +88,9 @@ def LR_l2(X, Y, iter_num, lamda, alpha):
     predict_1 = Y * np.log(y_hat(X, w))
     predict_0 = (1 - Y) * np.log(1 - y_hat(X, w))
     w = w + alpha * delta_w(X, Y, w)
-    w = w - alpha * lamda * w
-    loss_value = -np.sum(predict_1 + predict_0) / X.shape[0] + lamda * np.sum((w**2))
+    np_zeros = np.zeros(w.shape[0])
+    w = np.sign(w) * np.maximum(np.absolute(w) - alpha * lamda, np_zeros)
+    loss_value = -np.sum(predict_1 + predict_0) / X.shape[0] + lamda * np.sum(np.absolute(w))
     # print(w)
     # print(loss_function_l2(X, Y, w, lamda))
     loss_values.append(loss_value)
@@ -160,7 +162,6 @@ def plot_w_zeros_vs_lamda(df_lamda_w_zeros, w_zeros_plot_save_path):
 
 
 if __name__ == '__main__':
-    
     iter_num = math.pow(10, 4)
     # epsilon = math.pow(10, -6)
     # learning rate
@@ -181,7 +182,7 @@ if __name__ == '__main__':
     X_val, Y_val = separate_X_Y(df_val)
 
     # # Model training
-    # w, loss_values = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
+    # w, loss_values = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
     # print(loss_values[-1])
 
     # y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
@@ -190,10 +191,11 @@ if __name__ == '__main__':
     #     accuracy = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
     #     print(accuracy)
 
+
     if not os.path.isdir("./plots/"):
 		os.mkdir("./plots/")
 
-    w_zeros_plot_save_path = "./plots/w_zeros.jpg"
+    w_zeros_plot_save_path = "./plots/w_zeros_l1.jpg"
     zeros = []
 
     for i in range(-4, 4):
@@ -204,15 +206,15 @@ if __name__ == '__main__':
         lamda = math.pow(10, i)
 
         # Model training
-        w, _ = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
+        w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
 
-        if i in range(-4, -1):
-            w_absolute = np.absolute(w)
-            top_value_indice = w_absolute.argsort()[-5:][::-1]
-            top_5_feature_names = df_train.columns[top_value_indice]
-            print("--------------------")
-            print("lamda = ", lamda)
-            print(top_5_feature_names)
+        # if i in range(-4, -1):
+        w_absolute = np.absolute(w)
+        top_value_indice = w_absolute.argsort()[-5:][::-1]
+        top_5_feature_names = df_train.columns[top_value_indice]
+        print("--------------------")
+        print("lamda = ", lamda)
+        print(top_5_feature_names)
 
         
         n_zeros = np.count_nonzero(w==0)
@@ -236,8 +238,8 @@ if __name__ == '__main__':
 
 
 
-    # acc_train_plot_save_path = './plots/train_acc.jpg'
-    # acc_val_plot_save_path = './plots/val_acc.jpg'
+    # acc_train_plot_save_path = './plots/train_acc_l1.jpg'
+    # acc_val_plot_save_path = './plots/val_acc_l1.jpg'
 
     # acc_train = []
     # acc_val = []
@@ -250,7 +252,7 @@ if __name__ == '__main__':
     #     lamda = math.pow(10, i)
 
     #     # Model training
-    #     w, _ = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
+    #     w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
 
     #     y_predicted_train = [1 if x >= 0.5 else 0 for x in y_hat(X_train, w)]
     #     y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
