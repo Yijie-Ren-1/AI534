@@ -1,0 +1,56 @@
+part 1:
+(b)
+--------------------
+lamda =  0.0001
+Index(['Previously_Insured', 'Vehicle_Damage', 'dummy', 'Driving_License',
+       'Policy_Sales_Channel_26'],
+      dtype='object')
+--------------------
+lamda =  0.001
+Index(['Previously_Insured', 'Vehicle_Damage', 'dummy', 'Driving_License',
+       'Policy_Sales_Channel_26'],
+      dtype='object')
+--------------------
+lamda =  0.01
+Index(['Previously_Insured', 'Vehicle_Damage', 'dummy', 'Driving_License',
+       'Policy_Sales_Channel_26'],
+      dtype='object')
+--------------------
+lamda =  0.1
+Index(['Previously_Insured', 'Vehicle_Damage', 'Policy_Sales_Channel_152',
+       'Vehicle_Age_1', 'dummy'],
+      dtype='object')
+--------------------
+lamda =  1.0
+Index(['Previously_Insured', 'Vehicle_Damage', 'Vehicle_Age_1',
+       'Policy_Sales_Channel_152', 'Age'],
+      dtype='object')
+--------------------
+lamda =  10.0
+Index(['Vehicle_Damage', 'Previously_Insured', 'Age', 'Vehicle_Age_1',
+       'Policy_Sales_Channel_152'],
+      dtype='object')
+--------------------
+lamda =  100.0
+Index(['Policy_Sales_Channel_163', 'Policy_Sales_Channel_11',
+       'Policy_Sales_Channel_9', 'Policy_Sales_Channel_8',
+       'Policy_Sales_Channel_7'],
+      dtype='object')
+--------------------
+lamda =  1000.0
+Index(['Policy_Sales_Channel_163', 'Policy_Sales_Channel_11',
+       'Policy_Sales_Channel_9', 'Policy_Sales_Channel_8',
+       'Policy_Sales_Channel_7'],
+      dtype='object')
+--------------------
+lamda =  10000.0
+Index(['Policy_Sales_Channel_163', 'Policy_Sales_Channel_11',
+       'Policy_Sales_Channel_9', 'Policy_Sales_Channel_8',
+       'Policy_Sales_Channel_7'],
+      dtype='object')
+--------------------
+lamda =  100000.0
+Index(['Policy_Sales_Channel_163', 'Policy_Sales_Channel_11',
+       'Policy_Sales_Channel_9', 'Policy_Sales_Channel_8',
+       'Policy_Sales_Channel_7'],
+      dtype='object')
