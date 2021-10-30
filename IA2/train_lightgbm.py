@@ -3,6 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
+import lightgbm as lgb
 from sklearn.metrics import accuracy_score
 
 def plot(df_lamda_w_zeros, w_zeros_plot_save_path, y_name):
@@ -166,7 +167,21 @@ def plot_w_zeros_vs_lamda(df_lamda_w_zeros, w_zeros_plot_save_path):
   fig_lamda_w_zeros.savefig(w_zeros_plot_save_path)
 
 
-def feature_engineering(df):
+def feature_engineering2(df, column_names):
+  return df
+
+  # remove columns which std < 0.00001
+  df = df[column_names]
+
+  # standardize columns
+  columns = ['Age', 'Annual_Premium', 'Vintage'] #specify the column names
+  for col in columns:
+    df[col] = (df[col] - df[col].mean())/df[col].std() 
+
+
+  return df
+
+def feature_engineering(df, column_names):
   df['Annual_Premium'] = pd.cut(df['Annual_Premium'],[-100,10000,15000,20000,25000,30000,35000,40000,50000,1000000],labels=list(range(0,9)))
   # df['Age'] = df['Age'].map(pd.qcut(df['Age'].value_counts(), 20, labels=list(range(0,20))))
   # df['Vintage'] = df['Vintage'].map(pd.qcut(df['Vintage'].value_counts(), 8, labels=list(range(0,8))))
@@ -195,11 +210,25 @@ df_train = data_preprocessing(training_file_path)
 df_val = data_preprocessing(validation_file_path)
 df_test = data_preprocessing(test_file_path)
 
+threshold = 0.00001
+data_df = df_train.copy()
+data_df = data_df.drop(data_df.std()[data_df.var() < threshold].index.values, axis=1)
+column_names = data_df.columns.values.tolist()
+
+column_names_test = column_names.copy()
+column_names_test.remove('Response')
 
 print("feature_engineering..")
-df_train = feature_engineering(df_train)
-df_val = feature_engineering(df_val)
-df_test = feature_engineering(df_test)
+df_train = feature_engineering(df_train, column_names)
+df_val = feature_engineering(df_val, column_names)
+df_test = feature_engineering(df_test, column_names_test)
+
+# df_train = pd.concat([df_train, df_train])
+
+# print(df_train.shape)
+# print(df_val.shape)
+# print(df_test.shape)
+# exit(0)
 
 # separate X and Y
 X_train, Y_train = separate_X_Y(df_train)
@@ -208,23 +237,43 @@ X_test, _ = separate_X_Y(df_test)
 
 
 
-iter_num = 400
+iter_num = math.pow(10, 1)
 # epsilon = math.pow(10, -6)
 # learning rate
-alpha = 0.5
+alpha = math.pow(10, -2)
 # regularization parameter
 lamda = math.pow(10, -2)
 
-print("training..")
-# Model training
-# X_train = np.concatenate((X_train, X_val), axis=0)
-# Y_train = np.concatenate((Y_train, Y_val), axis=0)
-w, loss_values = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
-print(loss_values[-1])
+print("ligthgbm..")
 
-print("predict..")
-y_train_predicted = y_hat(X_train, w)
-y_val_predicted = y_hat(X_val, w)
+data_train = lgb.Dataset(X_train, label=Y_train)
+data_val = lgb.Dataset(X_val, label=Y_val)
+
+params={}
+params['learning_rate']=0.03
+params['objective']='binary' #Binary target feature
+params['metric']='binary_logloss' #metric for binary classification
+params['max_depth']=10
+params['num_threads']=2
+params['early_stopping_round']=20
+params['verbose']=-1
+
+
+# # gbm = lgb.train(params,data_train,num_boost_round=500, valid_sets=data_train)
+# gbm = lgb.train(params,data_val,num_boost_round=500, valid_sets=data_val)
+# y_predicted = gbm.predict(X_val)
+
+# for cutoff in np.arange(0.4, 0.6, 0.01):
+#   y_class = np.array([1 if x >= cutoff else 0 for x in y_predicted])
+#   if Y_val is not None:
+#       accuracy = np.count_nonzero(Y_val == y_class) / Y_val.shape[0]
+#       print("cutoff:%0.2f, accuracy:%0.4f" % (cutoff, accuracy))
+
+
+gbm = lgb.train(params,data_train,num_boost_round=180, valid_sets=data_train)
+# gbm = lgb.train(params,data_val,num_boost_round=100, valid_sets=data_val)
+y_train_predicted = gbm.predict(X_train)
+y_val_predicted = gbm.predict(X_val)
 
 for cutoff in np.arange(0.4, 0.6, 0.05):
   y_train_class = np.array([1 if x >= cutoff else 0 for x in y_train_predicted])
@@ -236,3 +285,29 @@ for cutoff in np.arange(0.4, 0.6, 0.05):
   print("Train: cutoff:%0.2f, accuracy:%0.4f" % (cutoff, train_accuracy))
   print("Val:   cutoff:%0.2f, accuracy:%0.4f" % (cutoff, val_accuracy))
   print()
+
+
+# Train: cutoff:0.40, accuracy:0.7805
+# Val:   cutoff:0.40, accuracy:0.9038
+
+# Train: cutoff:0.45, accuracy:0.7767
+# Val:   cutoff:0.45, accuracy:0.9204
+
+# Train: cutoff:0.50, accuracy:0.7717
+# Val:   cutoff:0.50, accuracy:0.9345
+
+# Train: cutoff:0.55, accuracy:0.7650
+# Val:   cutoff:0.55, accuracy:0.9457
+
+
+# # Model training
+# # X_train = np.concatenate((X_train, X_val), axis=0)
+# # Y_train = np.concatenate((Y_train, Y_val), axis=0)
+# w, loss_values = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
+# print(loss_values[-1])
+
+# y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
+
+# if Y_val is not None:
+#     accuracy = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
+#     print(accuracy)

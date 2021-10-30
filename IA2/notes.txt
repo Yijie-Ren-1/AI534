@@ -39,6 +39,32 @@ lamda = math.pow(10, -2)
 0.7916
 
 
+#####
+
+submission_1500_07
+iter_num = 1500
+alpha = 0.7
+lamda = math.pow(10, -2)
+Train: cutoff:0.50, accuracy:0.7925
+
+
+submission_300_05
+iter_num = 300
+alpha = 0.7
+lamda = math.pow(10, -2)
+Train: cutoff:0.50, accuracy:0.7911
+
+
+submission_150_05
+iter_num = 150
+alpha = 0.5
+lamda = math.pow(10, -2)
+Train: cutoff:0.50, accuracy:0.7885
+
+
+#####
+
+
 part 1:
 (b)
 --------------------

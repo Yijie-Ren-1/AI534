@@ -178,7 +178,7 @@ def feature_engineering(df):
   annual_premium_dums = pd.get_dummies(df['Annual_Premium'], prefix="onehot_Annual_Premium")
   vintage_dums = pd.get_dummies(df['Vintage'], prefix="onehot_Vintage")
 
-  df.drop(['Age', 'Annual_Premium', 'Vintage'], axis=1, inplace=True)
+  df.drop(['Age', 'Annual_Premium', 'Vintage', 'dummy'], axis=1, inplace=True)
   df = pd.concat([df, age_dums, annual_premium_dums, vintage_dums], axis=1)
   
 
@@ -208,7 +208,7 @@ X_test, _ = separate_X_Y(df_test)
 
 
 
-iter_num = 400
+iter_num = 300
 # epsilon = math.pow(10, -6)
 # learning rate
 alpha = 0.5
@@ -217,22 +217,30 @@ lamda = math.pow(10, -2)
 
 print("training..")
 # Model training
-# X_train = np.concatenate((X_train, X_val), axis=0)
-# Y_train = np.concatenate((Y_train, Y_val), axis=0)
+X_train = np.concatenate((X_train, X_val), axis=0)
+Y_train = np.concatenate((Y_train, Y_val), axis=0)
 w, loss_values = LR_l2(X_train, Y_train, iter_num, lamda, alpha)
 print(loss_values[-1])
 
 print("predict..")
 y_train_predicted = y_hat(X_train, w)
-y_val_predicted = y_hat(X_val, w)
+y_val_predicted = y_train_predicted
 
 for cutoff in np.arange(0.4, 0.6, 0.05):
   y_train_class = np.array([1 if x >= cutoff else 0 for x in y_train_predicted])
   y_val_class = np.array([1 if x >= cutoff else 0 for x in y_val_predicted])
 
   train_accuracy = np.count_nonzero(Y_train == y_train_class) / Y_train.shape[0]
-  val_accuracy = np.count_nonzero(Y_val == y_val_class) / Y_val.shape[0]
+  val_accuracy = np.count_nonzero(Y_train == y_val_class) / Y_train.shape[0]
 
   print("Train: cutoff:%0.2f, accuracy:%0.4f" % (cutoff, train_accuracy))
   print("Val:   cutoff:%0.2f, accuracy:%0.4f" % (cutoff, val_accuracy))
   print()
+
+
+y_test_predicted = y_hat(X_test, w)
+y_test_class = np.array([1 if x >= cutoff else 0 for x in y_test_predicted])
+val_pred = pd.DataFrame({'ID': list(range(0,len(y_test_class))),
+                        'Response': y_test_class})
+val_pred.to_csv(submission_filename, index=False)
+
