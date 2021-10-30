@@ -155,126 +155,126 @@ def plot_w_zeros_vs_lamda(df_lamda_w_zeros, w_zeros_plot_save_path):
   '''
 
   plt.clf()
-  lamda_w_zeros = sns.lineplot(data=df_lamda_w_zeros, x="regularization_lamda", y="w_zeros").set_title("weights_zeros_vs_lamda")
+  lamda_w_zeros = sns.lineplot(data=df_lamda_w_zeros, x="regularization_lamda", y="w_zeros").set_title("weights_zeros_vs_lamda_l1")
   fig_lamda_w_zeros = lamda_w_zeros.get_figure()
   fig_lamda_w_zeros.savefig(w_zeros_plot_save_path)
 
 
 
 if __name__ == '__main__':
+  iter_num = math.pow(10, 4)
+  # epsilon = math.pow(10, -6)
+  # learning rate
+  alpha = math.pow(10, -2)
+  # regularization parameter
+  # lamda = math.pow(10, -1)
+
+  training_file_path = "./IA2-train.csv"
+  validation_file_path = "./IA2-dev.csv"
+
+  df_train = data_preprocessing(training_file_path)
+  df_val = data_preprocessing(validation_file_path)
+
+  df_train, df_val = feature_normalization(df_train, df_val)
+
+  # separate X and Y
+  X_train, Y_train = separate_X_Y(df_train)
+  X_val, Y_val = separate_X_Y(df_val)
+
+  # # Model training
+  # w, loss_values = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
+  # print(loss_values[-1])
+
+  # y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
+
+  # if Y_val is not None:
+  #     accuracy = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
+  #     print(accuracy)
+
+
+  if not os.path.isdir("./plots/"):
+    os.mkdir("./plots/")
+
+  w_zeros_plot_save_path = "./plots/w_zeros_l1.jpg"
+  zeros = []
+
+  for i in range(-4, 4):
     iter_num = math.pow(10, 4)
-    # epsilon = math.pow(10, -6)
     # learning rate
     alpha = math.pow(10, -2)
     # regularization parameter
-    # lamda = math.pow(10, -1)
+    lamda = math.pow(10, i)
 
-    training_file_path = "./IA2-train.csv"
-    validation_file_path = "./IA2-dev.csv"
+    # Model training
+    w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
 
-    df_train = data_preprocessing(training_file_path)
-    df_val = data_preprocessing(validation_file_path)
+    if i in range(-4, 2):
+      w_absolute = np.absolute(w)
+      top_value_indice = w_absolute.argsort()[-5:][::-1]
+      top_5_feature_names = df_train.columns[top_value_indice]
+      print("--------------------")
+      print("lamda = ", lamda)
+      print(top_5_feature_names)
 
-    df_train, df_val = feature_normalization(df_train, df_val)
+    
+    n_zeros = np.count_nonzero(w==0)
+    zeros.append(n_zeros)
 
-    # separate X and Y
-    X_train, Y_train = separate_X_Y(df_train)
-    X_val, Y_val = separate_X_Y(df_val)
+  dict_w = {
+    'regularization_lamda': list(range(-4,4)),
+    'w_zeros': zeros
+  }
 
-    # # Model training
-    # w, loss_values = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
-    # print(loss_values[-1])
-
-    # y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
-
-    # if Y_val is not None:
-    #     accuracy = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
-    #     print(accuracy)
-
-
-    if not os.path.isdir("./plots/"):
-		os.mkdir("./plots/")
-
-    w_zeros_plot_save_path = "./plots/w_zeros_l1.jpg"
-    zeros = []
-
-    for i in range(-4, 4):
-        iter_num = math.pow(10, 4)
-        # learning rate
-        alpha = math.pow(10, -2)
-        # regularization parameter
-        lamda = math.pow(10, i)
-
-        # Model training
-        w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
-
-        # if i in range(-4, -1):
-        w_absolute = np.absolute(w)
-        top_value_indice = w_absolute.argsort()[-5:][::-1]
-        top_5_feature_names = df_train.columns[top_value_indice]
-        print("--------------------")
-        print("lamda = ", lamda)
-        print(top_5_feature_names)
-
-        
-        n_zeros = np.count_nonzero(w==0)
-        zeros.append(n_zeros)
-
-    dict_w = {
-        'regularization_lamda': list(range(-4,4)),
-        'w_zeros': zeros
-    }
-
-    df_w_zeros = pd.DataFrame(dict_w)
-    plot_w_zeros_vs_lamda(df_w_zeros, w_zeros_plot_save_path)
+  df_w_zeros = pd.DataFrame(dict_w)
+  plot_w_zeros_vs_lamda(df_w_zeros, w_zeros_plot_save_path)
 
 
-    # dict = {
-    #     'y_predicted': y_predicted,
-    #     'Y_val': Y_val
-    # }
-    # df_pred = pd.DataFrame(dict)
-    # df_pred.to_csv('./pred.csv')
+  # dict = {
+  #     'y_predicted': y_predicted,
+  #     'Y_val': Y_val
+  # }
+  # df_pred = pd.DataFrame(dict)
+  # df_pred.to_csv('./pred.csv')
 
 
 
-    # acc_train_plot_save_path = './plots/train_acc_l1.jpg'
-    # acc_val_plot_save_path = './plots/val_acc_l1.jpg'
+  # acc_train_plot_save_path = './plots/train_acc_l1.jpg'
+  # acc_val_plot_save_path = './plots/val_acc_l1.jpg'
 
-    # acc_train = []
-    # acc_val = []
+  # acc_train = []
+  # acc_val = []
 
-    # for i in range(-3,4):
-    #     iter_num = math.pow(10, 4)
-    #     # learning rate
-    #     alpha = math.pow(10, -2)
-    #     # regularization parameter
-    #     lamda = math.pow(10, i)
+  # for i in range(-3,4):
+  #     iter_num = math.pow(10, 4)
+  #     # learning rate
+  #     alpha = math.pow(10, -2)
+  #     # regularization parameter
+  #     lamda = math.pow(10, i)
 
-    #     # Model training
-    #     w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
+  #     # Model training
+  #     w, _ = LR_l1(X_train, Y_train, iter_num, lamda, alpha)
 
-    #     y_predicted_train = [1 if x >= 0.5 else 0 for x in y_hat(X_train, w)]
-    #     y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
+  #     y_predicted_train = [1 if x >= 0.5 else 0 for x in y_hat(X_train, w)]
+  #     y_predicted = [1 if x >= 0.5 else 0 for x in y_hat(X_val, w)]
 
-    #     accuracy_train = np.count_nonzero(Y_train == y_predicted_train) / Y_train.shape[0]
-    #     accuracy_val = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
+  #     accuracy_train = np.count_nonzero(Y_train == y_predicted_train) / Y_train.shape[0]
+  #     accuracy_val = np.count_nonzero(Y_val == y_predicted) / Y_val.shape[0]
 
-    #     acc_train.append(accuracy_train)
-    #     acc_val.append(accuracy_val)
+  #     acc_train.append(accuracy_train)
+  #     acc_val.append(accuracy_val)
 
 
-    # dict_train = {
-    #     'regularization_lamda': list(range(-3,4)),
-    #     'accuracy': acc_train
-    # }
-    # dict_val = {
-    #     'regularization_lamda': list(range(-3,4)),
-    #     'accuracy': acc_val
-    # }
+  # dict_train = {
+  #     'regularization_lamda': list(range(-3,4)),
+  #     'accuracy': acc_train
+  # }
+  # dict_val = {
+  #     'regularization_lamda': list(range(-3,4)),
+  #     'accuracy': acc_val
+  # }
 
-    # df_train_acc = pd.DataFrame(dict_train)
-    # df_val_acc = pd.DataFrame(dict_val)
+  # df_train_acc = pd.DataFrame(dict_train)
+  # df_val_acc = pd.DataFrame(dict_val)
 
-    # plot_accuracy_vs_lamda(df_train_acc, acc_train_plot_save_path, "training_accuracy")
-    # plot_accuracy_vs_lamda(df_val_acc, acc_val_plot_save_path, "validation_accuracy")
+  # plot_accuracy_vs_lamda(df_train_acc, acc_train_plot_save_path, "training_accuracy")
+  # plot_accuracy_vs_lamda(df_val_acc, acc_val_plot_save_path, "validation_accuracy")

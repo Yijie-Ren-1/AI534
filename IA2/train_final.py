@@ -3,7 +3,6 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import accuracy_score
 
 def plot(df_lamda_w_zeros, w_zeros_plot_save_path, y_name):
   plt.clf()
