@@ -208,12 +208,12 @@ X_test, _ = separate_X_Y(df_test)
 
 
 
-iter_num = 300
+iter_num = 1000
 # epsilon = math.pow(10, -6)
 # learning rate
 alpha = 0.5
 # regularization parameter
-lamda = math.pow(10, -2)
+lamda = 1e-3
 
 print("training..")
 # Model training
