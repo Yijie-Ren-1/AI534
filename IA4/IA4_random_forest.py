@@ -4,6 +4,7 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import random
 
 
 class Node():
@@ -90,13 +91,14 @@ def decision_tree(df, feature_names, depth, max_depth, target_attribute_name = "
   '''
 
   depth = depth + 1
-  
+
   # select the best gain & best feature
   best_gain = 0
-  best_feature = feature_names[0]
+  if len(feature_names) > 0:
+    best_feature = feature_names[0]
+  else:
+    best_feature = ''
   class_prediction = 1 if df['class'].sum() / df.shape[0] > 0.5 else 0
-  print('depth:')
-  print(depth)
 
   for feature in feature_names:
     
@@ -105,11 +107,6 @@ def decision_tree(df, feature_names, depth, max_depth, target_attribute_name = "
     if gain > best_gain:
       best_gain = gain
       best_feature = feature
-
-  print('best_feature:')
-  print(best_feature)
-  print('best_info_gain:')
-  print(best_gain)
 
   node = Node(class_prediction, best_feature, None, None)
   # stop condition
@@ -124,6 +121,27 @@ def decision_tree(df, feature_names, depth, max_depth, target_attribute_name = "
   node.right_tree = decision_tree(df_right, feature_names_without_class, depth, max_depth, target_attribute_name = "class")
 
   return node
+
+
+def random_forest(df, number_of_trees, number_of_features, max_depth):
+  '''
+  :param df: df, the training data
+  :param number_of_trees: int, how many trees in the random forest
+  :param number_of_features: int, the columns for features selected to build the decision tree
+  :param max_depth: int, maximum depth of each decision tree in random forest, defined in main function
+  :return: a list of Node, which is the random forest
+  '''
+
+  random_forest_trees = []
+  for tree_num in range(number_of_trees):
+    feature_indices = random.sample(range(df.shape[1]-1), number_of_features) + [df.shape[1]-1]
+    df_for_single_tree = df[df.columns[feature_indices]]
+    feature_names = df_for_single_tree.columns.tolist()
+    feature_names.remove('class')
+    decision_tree_root = decision_tree(df_for_single_tree, feature_names, -1, max_depth, target_attribute_name = "class")
+    random_forest_trees.append(decision_tree_root)
+
+  return random_forest_trees
 
 
 def traverse_tree(node, example):
@@ -142,33 +160,61 @@ def traverse_tree(node, example):
     return traverse_tree(node.right_tree, example)
 
 
-def predict(decision_tree_root, df):
+def predict(random_forest_trees, df):
   '''
-  :param decision_tree_root: Node, the root node of a trained decision tree
+  :param random_forest_trees: list, the root nodes of trained decision trees
   :param df: df, the dataset to get the class prediction
   :return: accuracy, int, the training/validation accuracy
   '''
 
   accuracy = 0
   for _, row in df.iterrows():
-    predicted_class = traverse_tree(decision_tree_root, row)
-    if predicted_class == row['class']:
+
+    predicted_classes = np.array([])
+
+    for tree_root in random_forest_trees:
+      predicted_class = traverse_tree(tree_root, row)
+      predicted_classes = np.append(predicted_classes, predicted_class)
+    
+    predicted_classes = predicted_classes.astype(int)
+    counts = np.bincount(predicted_classes)
+    final_predicted_class = np.argmax(counts)
+    if final_predicted_class == row['class']:
       accuracy = accuracy + 1
+
   return accuracy / df.shape[0]
 
 
-def plot_acc_train_val(df_acc, acc_plot_save_path):
+def plot_acc_train(df_acc, acc_plot_save_path, depth):
   '''
-  :param df_acc: df, contains dmax as X, and acc of train & val as Y
+  :param df_acc: df, contains dmax as X, and acc of train as Y
   :param acc_plot_save_path: str, the file name to save the line plot
+  :param depth: int, the maximum depth of the random forest for figure
   :return: none, save lineplot to the file path
   '''
 
   plt.clf()
-  acc = sns.lineplot(data=df_acc, x = 'x_range', y = 'acc', hue = 'train/val acc')
-  acc.set_title('accuracy of train & val for decision tree')
-  acc.set_xlabel("dmax")
-  acc.set_ylabel("training/validation accuracy")
+  acc = sns.lineplot(data=df_acc, x = 'x_range', y = 'acc', hue = 'm_value')
+  acc.set_title('training accuracy for random forest, dmax = ' + str(depth))
+  acc.set_xlabel("number of trees (T)")
+  acc.set_ylabel("training accuracy")
+  acc_figure = acc.get_figure()
+  acc_figure.savefig(acc_plot_save_path)
+
+
+def plot_acc_val(df_acc, acc_plot_save_path, depth):
+  '''
+  :param df_acc: df, contains dmax as X, and acc of val as Y
+  :param acc_plot_save_path: str, the file name to save the line plot
+  :param depth: int, the maximum depth of the random forest for figure
+  :return: none, save lineplot to the file path
+  '''
+
+  plt.clf()
+  acc = sns.lineplot(data=df_acc, x = 'x_range', y = 'acc', hue = 'm_value')
+  acc.set_title('validation accuracy for random forest, dmax = ' + str(depth))
+  acc.set_xlabel("number of trees (T)")
+  acc.set_ylabel("validation accuracy")
   acc_figure = acc.get_figure()
   acc_figure.savefig(acc_plot_save_path)
 
@@ -176,7 +222,9 @@ def plot_acc_train_val(df_acc, acc_plot_save_path):
 
 if __name__ == '__main__':
     
-  dmax = 10
+  dmax_list = [1, 2, 5]
+  T = [10, 20, 30, 40, 50]
+  m = [5, 10, 25, 50]
 
   training_file_path = "./mushroom-train.csv"
   validation_file_path = "./mushroom-val.csv"
@@ -185,34 +233,53 @@ if __name__ == '__main__':
   df_train = data_preprocessing(training_file_path)
   df_val = data_preprocessing(validation_file_path)
 
-  # Model training
-  acc_train = []
-  acc_val = []
-  for depth in range(1, dmax+1):
-    print("~~~~~~~~~~~~~~~~~~ dmax = " + str(depth) + "~~~~~~~~~~~~~~~~~~~~~~~~~")
-    feature_names = df_train.columns.tolist()
-    feature_names.remove('class')
-    decision_tree_root = decision_tree(df_train, feature_names, -1, depth, target_attribute_name = "class")
-    accuracy_train = predict(decision_tree_root, df_train)
-    accuracy_val = predict(decision_tree_root, df_val)
-    acc_train.append(accuracy_train)
-    acc_val.append(accuracy_val)
-    print('training accuracy:')
-    print(accuracy_train)
-    print('validation accuracy:')
-    print(accuracy_val)
-
   # draw accuracy plot for train & val
   if not os.path.isdir("./plots/"):
     os.mkdir("./plots/") 
 
-  acc_plot_save_path = "./plots/decision_tree_acc_train_val.jpg"
+  # Model training
+  for depth in dmax_list:
+    print('depth:')
+    print(depth)
+    train_acc_plot_save_path = "./plots/random_forest_acc_train_dmax=" + str(depth) + ".jpg"
+    val_acc_plot_save_path = "./plots/random_forest_acc_val_dmax=" + str(depth) + ".jpg"
 
-  dict_acc = {
-    'acc': acc_train + acc_val,
-    'x_range': list(range(1, dmax + 1)) + list(range(1, dmax + 1)),
-    'train/val acc': ['training_accuracy'] * dmax + ['val_accuracy'] * dmax
-  }
+    acc_train_total = []
+    acc_val_total = []
+    m_value = []
+    for feature_num in m:
+      print('feature_num (m):')
+      print(feature_num)
+      acc_train = []
+      acc_val = []
+      for tree_num in T:
+        random_forest_trees = random_forest(df_train, tree_num, feature_num, depth)
+        accuracy_train = predict(random_forest_trees, df_train)
+        accuracy_val = predict(random_forest_trees, df_val)
+        acc_train.append(accuracy_train)
+        acc_val.append(accuracy_val)
+        m_value.append('m = ' + str(feature_num))
+      acc_train_total = acc_train_total + acc_train
+      acc_val_total = acc_val_total + acc_val
 
-  df_acc = pd.DataFrame(dict_acc)
-  plot_acc_train_val(df_acc, acc_plot_save_path)
+    dict_acc_train = {
+      'acc': acc_train_total,
+      'x_range': T*len(m),
+      'm_value': m_value
+    }
+    df_acc_train = pd.DataFrame(dict_acc_train)
+    plot_acc_train(df_acc_train, train_acc_plot_save_path, depth)
+
+
+    dict_acc_val = {
+      'acc': acc_val_total,
+      'x_range': T*len(m),
+      'm_value': m_value
+    }
+    df_acc_val = pd.DataFrame(dict_acc_val)
+    plot_acc_val(df_acc_val, val_acc_plot_save_path, depth)
+
+
+
+  
+
